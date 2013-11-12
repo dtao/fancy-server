@@ -8,7 +8,16 @@ var fs        = require('fs'),
     bootscrap = require('bootscrap'),
     commander = require('commander');
 
+// data and whatnot
+var rootDir      = path.join(__dirname, '..'),
+    packageInfo  = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf-8')),
+    resourcesDir = path.join(rootDir, 'resources'),
+    layout       = fs.readFileSync(path.join(resourcesDir, 'layout.html.mustache'), 'utf8'),
+    index        = fs.readFileSync(path.join(resourcesDir, 'index.html.mustache'), 'utf8'),
+    article      = fs.readFileSync(path.join(resourcesDir, 'article.html.mustache'), 'utf8');
+
 commander
+  .version(packageInfo.version)
   .option('-p, --port <port>', 'specify the port to listen on')
   .option('-t, --theme <theme>', 'specify a Bootswatch theme (or "default")')
   .parse(process.argv);
@@ -16,13 +25,6 @@ commander
 // options, with defaults
 var port  = commander.port || 8080,
     theme = commander.theme || 'default';
-
-// data and whatnot
-var rootDir      = path.join(__dirname, '..'),
-    resourcesDir = path.join(rootDir, 'resources'),
-    layout       = fs.readFileSync(path.join(resourcesDir, 'layout.html.mustache'), 'utf8'),
-    index        = fs.readFileSync(path.join(resourcesDir, 'index.html.mustache'), 'utf8'),
-    article      = fs.readFileSync(path.join(resourcesDir, 'article.html.mustache'), 'utf8');
 
 function titleFromPath(filePath) {
   filePath = path.basename(filePath, path.extname(filePath));
@@ -36,19 +38,19 @@ function getArticleInfo(filePath) {
   };
 }
 
-function getArticleList() {
-  var files = fs.readdirSync(process.cwd());
+function getArticleList(callback) {
+  fs.readdir(process.cwd(), function(err, files) {
+    var articleList = [];
+    for (var i = 0; i < files.length; ++i) {
+      if (!files[i].match(/\.(?:md|markdown)$/)) {
+        continue;
+      }
 
-  var articleList = [];
-  for (var i = 0; i < files.length; ++i) {
-    if (!files[i].match(/\.(?:md|markdown)$/)) {
-      continue;
+      articleList.push(getArticleInfo(files[i]));
     }
 
-    articleList.push(getArticleInfo(files[i]));
-  }
-
-  return articleList;
+    callback(articleList);
+  });
 }
 
 function contentType(response, type) {
@@ -56,17 +58,18 @@ function contentType(response, type) {
 }
 
 function renderIndex(response) {
-  var articles = getArticleList(),
-      partials = { content: index };
+  getArticleList(function(articles) {
+    var partials = { content: index };
 
-  contentType(response, 'text/html');
-  response.end(
-    mustache.render(layout, {
-      title: path.basename(process.cwd()),
-      theme: theme,
-      articles: articles
-    }, partials)
-  );
+    contentType(response, 'text/html');
+    response.end(
+      mustache.render(layout, {
+        title: path.basename(process.cwd()),
+        theme: theme,
+        articles: articles
+      }, partials)
+    );
+  });
 }
 
 function renderStylesheet(filePath, response) {
@@ -77,16 +80,17 @@ function renderStylesheet(filePath, response) {
 }
 
 function renderArticle(filePath, response) {
-  var source   = fs.readFileSync(path.join(process.cwd(), filePath), 'utf8'),
-      partials = { content: article };
+  fs.readFile(path.join(process.cwd(), filePath), { encoding: 'utf8' }, function(err, source) {
+    var partials = { content: article };
 
-  response.end(
-    mustache.render(layout, {
-      title: titleFromPath(filePath),
-      theme: theme,
-      content: marked(source)
-    }, partials)
-  );
+    response.end(
+      mustache.render(layout, {
+        title: titleFromPath(filePath),
+        theme: theme,
+        content: marked(source)
+      }, partials)
+    );
+  });
 }
 
 var server = http.createServer(function(request, response) {

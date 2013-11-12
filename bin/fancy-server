@@ -96,8 +96,12 @@ var server = http.createServer(function(request, response) {
   } else if (request.url.match(/\.css$/)) {
     renderStylesheet(request.url, response);
 
-  } else {
+  } else if (request.url.match(/\.(?:md|markdown)$/)) {
     renderArticle(request.url, response);
+
+  } else {
+    response.writeHead(404)
+    response.end();
   }
 });
 

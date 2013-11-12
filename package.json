@@ -1,0 +1,12 @@
+{
+  "name": "fancy-server",
+  "version": "0.1.0",
+  "bin": {
+    "fancy-server": "bin/fancy-server"
+  },
+  "dependencies": {
+    "commander": ">= 2.0.0",
+    "marked": ">= 0.2.10",
+    "mustache": ">= 0.7.3"
+  }
+}

@@ -1,0 +1,78 @@
+#!/usr/bin/env node
+
+var fs        = require('fs'),
+    path      = require('path'),
+    http      = require('http'),
+    marked    = require('marked'),
+    mustache  = require('mustache'),
+    commander = require('commander');
+
+commander
+  .option('-p, --port <port>', 'specify the port to listen on')
+  .parse(process.argv);
+
+// options, with defaults
+var port = commander.port || 8080;
+
+// data and whatnot
+var rootDir      = path.join(__dirname, '..'),
+    resourcesDir = path.join(rootDir, 'resources'),
+    layout       = fs.readFileSync(path.join(resourcesDir, 'layout.html.mustache'), 'utf8'),
+    index        = fs.readFileSync(path.join(resourcesDir, 'index.html.mustache'), 'utf8'),
+    article      = fs.readFileSync(path.join(resourcesDir, 'article.html.mustache'), 'utf8');
+
+function getArticleInfo(filePath) {
+  return {
+    href: filePath,
+    title: filePath.charAt(0) + filePath.substring(1).replace(/[\-_]/g, ' ')
+  };
+}
+
+function getArticleList() {
+  var files = fs.readdirSync(process.cwd());
+
+  var articleList = [];
+  for (var i = 0; i < files.length; ++i) {
+    if (!files[i].match(/\.(?:md|markdown)$/)) {
+      continue;
+    }
+
+    articleList.push(getArticleInfo(files[i]));
+  }
+
+  return articleList;
+}
+
+function renderIndex() {
+  var articles = getArticleList(),
+      partials = { content: index };
+
+  return mustache.render(layout, {
+    title: path.basename(process.cwd()),
+    articles: articles
+  }, partials);
+}
+
+function renderArticle(filePath) {
+  var source   = fs.readFileSync(path.join(process.cwd(), filePath), 'utf8'),
+      partials = { content: article };
+
+  return mustache.render(layout, {
+    title: path.basename(filePath),
+    content: marked(source)
+  }, partials);
+}
+
+var server = http.createServer(function(request, response) {
+  response.writeHead(200, { 'Content-Type': 'text/html' });
+
+  if (request.url === '/') {
+    response.end(renderIndex());
+  } else {
+    response.end(renderArticle(request.url));
+  }
+});
+
+server.listen(port);
+
+console.log('Server running at http://localhost:' + port + '/');

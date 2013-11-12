@@ -5,14 +5,17 @@ var fs        = require('fs'),
     http      = require('http'),
     marked    = require('marked'),
     mustache  = require('mustache'),
+    bootscrap = require('bootscrap'),
     commander = require('commander');
 
 commander
   .option('-p, --port <port>', 'specify the port to listen on')
+  .option('-t, --theme <theme>', 'specify a Bootswatch theme (or "default")')
   .parse(process.argv);
 
 // options, with defaults
-var port = commander.port || 8080;
+var port  = commander.port || 8080,
+    theme = commander.theme || 'default';
 
 // data and whatnot
 var rootDir      = path.join(__dirname, '..'),
@@ -21,10 +24,15 @@ var rootDir      = path.join(__dirname, '..'),
     index        = fs.readFileSync(path.join(resourcesDir, 'index.html.mustache'), 'utf8'),
     article      = fs.readFileSync(path.join(resourcesDir, 'article.html.mustache'), 'utf8');
 
+function titleFromPath(filePath) {
+  filePath = path.basename(filePath, path.extname(filePath));
+  return filePath.charAt(0).toUpperCase() + filePath.substring(1).replace(/[\-_]/g, ' ');
+}
+
 function getArticleInfo(filePath) {
   return {
     href: filePath,
-    title: filePath.charAt(0) + filePath.substring(1).replace(/[\-_]/g, ' ')
+    title: titleFromPath(filePath)
   };
 }
 
@@ -43,33 +51,53 @@ function getArticleList() {
   return articleList;
 }
 
-function renderIndex() {
+function contentType(response, type) {
+  response.writeHead(200, { 'Content-Type': type });
+}
+
+function renderIndex(response) {
   var articles = getArticleList(),
       partials = { content: index };
 
-  return mustache.render(layout, {
-    title: path.basename(process.cwd()),
-    articles: articles
-  }, partials);
+  contentType(response, 'text/html');
+  response.end(
+    mustache.render(layout, {
+      title: path.basename(process.cwd()),
+      theme: theme,
+      articles: articles
+    }, partials)
+  );
 }
 
-function renderArticle(filePath) {
+function renderStylesheet(filePath, response) {
+  var theme = path.basename(filePath, '.css');
+
+  contentType(response, 'text/css');
+  response.end(bootscrap.css(theme));
+}
+
+function renderArticle(filePath, response) {
   var source   = fs.readFileSync(path.join(process.cwd(), filePath), 'utf8'),
       partials = { content: article };
 
-  return mustache.render(layout, {
-    title: path.basename(filePath),
-    content: marked(source)
-  }, partials);
+  response.end(
+    mustache.render(layout, {
+      title: titleFromPath(filePath),
+      theme: theme,
+      content: marked(source)
+    }, partials)
+  );
 }
 
 var server = http.createServer(function(request, response) {
-  response.writeHead(200, { 'Content-Type': 'text/html' });
-
   if (request.url === '/') {
-    response.end(renderIndex());
+    renderIndex(response);
+
+  } else if (request.url.match(/\.css$/)) {
+    renderStylesheet(request.url, response);
+
   } else {
-    response.end(renderArticle(request.url));
+    renderArticle(request.url, response);
   }
 });
 

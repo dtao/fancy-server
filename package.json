@@ -5,6 +5,7 @@
     "fancy-server": "bin/fancy-server"
   },
   "dependencies": {
+    "bootscrap": ">= 0.1.0",
     "commander": ">= 2.0.0",
     "marked": ">= 0.2.10",
     "mustache": ">= 0.7.3"

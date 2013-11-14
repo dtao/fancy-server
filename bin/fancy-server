@@ -32,9 +32,21 @@ commander
   .parse(process.argv);
 
 // options, with defaults
-var port           = commander.port || 8080,
-    theme          = commander.theme || 'default',
-    highlightTheme = commander.highlightTheme || 'default';
+var port               = commander.port || 8080,
+    themeHref          = urlForTheme(commander.theme || 'default'),
+    highlightThemeHref = urlForHighlightTheme(commander.highlightTheme || 'default');
+
+function urlForTheme(theme) {
+  if (theme === 'default') {
+    return '//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css';
+  }
+
+  return '//netdna.bootstrapcdn.com/bootswatch/3.0.1/' + theme + '/bootstrap.min.css';
+}
+
+function urlForHighlightTheme(highlightTheme) {
+  return '//highlightjs.org/static/styles/' + highlightTheme + '.css';
+}
 
 function titleFromPath(filePath) {
   filePath = path.basename(filePath, path.extname(filePath));
@@ -89,8 +101,8 @@ function renderIndex(response) {
     response.end(
       mustache.render(layout, {
         title: path.basename(process.cwd()),
-        theme: theme,
-        highlightTheme: highlightTheme,
+        themeHref: themeHref,
+        highlightThemeHref: highlightThemeHref,
         articles: articles
       }, partials)
     );
@@ -104,8 +116,8 @@ function renderArticle(filePath, response) {
     response.end(
       mustache.render(layout, {
         title: titleFromPath(filePath),
-        theme: theme,
-        highlightTheme: highlightTheme,
+        themeHref: themeHref,
+        highlightThemeHref: highlightThemeHref,
         content: marked(source)
       }, partials)
     );

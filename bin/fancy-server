@@ -5,7 +5,6 @@ var fs        = require('fs'),
     http      = require('http'),
     marked    = require('marked'),
     mustache  = require('mustache'),
-    bootscrap = require('bootscrap'),
     hljs      = require('highlight.js'),
     commander = require('commander');
 
@@ -23,18 +22,19 @@ var rootDir      = path.join(__dirname, '..'),
     resourcesDir = path.join(rootDir, 'resources'),
     layout       = fs.readFileSync(path.join(resourcesDir, 'layout.html.mustache'), 'utf8'),
     index        = fs.readFileSync(path.join(resourcesDir, 'index.html.mustache'), 'utf8'),
-    article      = fs.readFileSync(path.join(resourcesDir, 'article.html.mustache'), 'utf8'),
-    githubStyle  = fs.readFileSync(path.join(resourcesDir, 'css', 'github.css'), 'utf-8');
+    article      = fs.readFileSync(path.join(resourcesDir, 'article.html.mustache'), 'utf8');
 
 commander
   .version(packageInfo.version)
   .option('-p, --port <port>', 'specify the port to listen on')
   .option('-t, --theme <theme>', 'specify a Bootswatch theme (or "default")')
+  .option('-h, --highlight-theme <theme>', 'specify a highlight.js theme (or "default")')
   .parse(process.argv);
 
 // options, with defaults
-var port  = commander.port || 8080,
-    theme = commander.theme || 'default';
+var port           = commander.port || 8080,
+    theme          = commander.theme || 'default',
+    highlightTheme = commander.highlightTheme || 'default';
 
 function titleFromPath(filePath) {
   filePath = path.basename(filePath, path.extname(filePath));
@@ -90,21 +90,11 @@ function renderIndex(response) {
       mustache.render(layout, {
         title: path.basename(process.cwd()),
         theme: theme,
+        highlightTheme: highlightTheme,
         articles: articles
       }, partials)
     );
   });
-}
-
-function renderStylesheet(filePath, response) {
-  var theme = path.basename(filePath, '.css');
-
-  contentType(response, 'text/css');
-  if (theme === 'github') {
-    response.end(githubStyle);
-  } else {
-    response.end(bootscrap.css(theme));
-  }
 }
 
 function renderArticle(filePath, response) {
@@ -115,6 +105,7 @@ function renderArticle(filePath, response) {
       mustache.render(layout, {
         title: titleFromPath(filePath),
         theme: theme,
+        highlightTheme: highlightTheme,
         content: marked(source)
       }, partials)
     );
@@ -140,10 +131,6 @@ var server = http.createServer(function(request, response) {
   }
 
   switch (path.extname(request.url)) {
-    case '.css':
-      renderStylesheet(request.url, response);
-      break;
-
     case '.md':
     case '.markdown':
       renderArticle(request.url, response);

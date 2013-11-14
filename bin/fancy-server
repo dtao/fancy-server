@@ -6,7 +6,16 @@ var fs        = require('fs'),
     marked    = require('marked'),
     mustache  = require('mustache'),
     bootscrap = require('bootscrap'),
+    hljs      = require('highlight.js'),
     commander = require('commander');
+
+// Markdown configuration
+marked.setOptions({
+  highlight: function(code, lang) {
+    if (lang === 'html') { lang = 'xml'; }
+    return hljs.highlight(lang, code).value
+  }
+});
 
 // data and whatnot
 var rootDir      = path.join(__dirname, '..'),
@@ -14,7 +23,8 @@ var rootDir      = path.join(__dirname, '..'),
     resourcesDir = path.join(rootDir, 'resources'),
     layout       = fs.readFileSync(path.join(resourcesDir, 'layout.html.mustache'), 'utf8'),
     index        = fs.readFileSync(path.join(resourcesDir, 'index.html.mustache'), 'utf8'),
-    article      = fs.readFileSync(path.join(resourcesDir, 'article.html.mustache'), 'utf8');
+    article      = fs.readFileSync(path.join(resourcesDir, 'article.html.mustache'), 'utf8'),
+    githubStyle  = fs.readFileSync(path.join(resourcesDir, 'css', 'github.css'), 'utf-8');
 
 commander
   .version(packageInfo.version)
@@ -57,6 +67,20 @@ function contentType(response, type) {
   response.writeHead(200, { 'Content-Type': type });
 }
 
+function contentTypeForFile(response, filePath) {
+  switch (path.extname(filePath).toLowerCase()) {
+    case '.gif':
+      return 'image/gif';
+
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpg';
+
+    case '.png':
+      return 'image/png';
+  }
+}
+
 function renderIndex(response) {
   getArticleList(function(articles) {
     var partials = { content: index };
@@ -76,7 +100,11 @@ function renderStylesheet(filePath, response) {
   var theme = path.basename(filePath, '.css');
 
   contentType(response, 'text/css');
-  response.end(bootscrap.css(theme));
+  if (theme === 'github') {
+    response.end(githubStyle);
+  } else {
+    response.end(bootscrap.css(theme));
+  }
 }
 
 function renderArticle(filePath, response) {
@@ -93,19 +121,37 @@ function renderArticle(filePath, response) {
   });
 }
 
+function serveFile(filePath, response) {
+  fs.readFile(path.join(process.cwd(), filePath), function(err, data) {
+    if (err) {
+      response.writeHead(404)
+      response.end();
+      return;
+    }
+
+    contentType(response, contentTypeForFile(filePath));
+    response.end(data, 'binary');
+  });
+}
+
 var server = http.createServer(function(request, response) {
   if (request.url === '/') {
     renderIndex(response);
+  }
 
-  } else if (request.url.match(/\.css$/)) {
-    renderStylesheet(request.url, response);
+  switch (path.extname(request.url)) {
+    case '.css':
+      renderStylesheet(request.url, response);
+      break;
 
-  } else if (request.url.match(/\.(?:md|markdown)$/)) {
-    renderArticle(request.url, response);
+    case '.md':
+    case '.markdown':
+      renderArticle(request.url, response);
+      break;
 
-  } else {
-    response.writeHead(404)
-    response.end();
+    default:
+      serveFile(request.url, response);
+      break;
   }
 });
 

@@ -1,6 +1,8 @@
 {
   "name": "fancy-server",
+  "description": "Serve Markdown files from the current directory",
   "version": "0.1.1-dev",
+  "repository": "https://github.com/dtao/fancy-server",
   "bin": {
     "fancy-server": "bin/fancy-server"
   },

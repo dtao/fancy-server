@@ -17,8 +17,12 @@ Specify a custom port with `-p`:
 
     fancy-server -p 3000
 
-Specify a Bootswatch theme with `-t`:
+Specify a [Bootswatch](http://bootswatch.com/) theme with `-t`:
 
     fancy-server -t readable
+
+Specify a [highlight.js](http://highlightjs.org/) theme with `-h` (if your Markdown includes code examples):
+
+    fancy-server -h rainbow
 
 That's it!

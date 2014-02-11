@@ -137,7 +137,8 @@ function renderArticle(filePath, response) {
     response.end(
       mustache.render(layout, {
         title: titleFromPath(filePath),
-        theme: theme,
+        themeHref: themeHref,
+        highlightThemeHref: highlightThemeHref,
         content: marked(source)
       }, partials)
     );

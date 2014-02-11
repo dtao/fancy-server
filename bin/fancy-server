@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var fs        = require('fs'),
-    path      = require('path'),
+    path      = require('apathy'),
     http      = require('http'),
     marked    = require('marked'),
     mustache  = require('mustache'),

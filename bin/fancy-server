@@ -109,15 +109,35 @@ function renderIndex(response) {
   });
 }
 
+function checkFileAccess(filePath, response) {
+  if (!path.isDescendant(filePath)) {
+    response.writeHead(403);
+    response.end();
+    return false;
+  }
+
+  return true;
+}
+
 function renderArticle(filePath, response) {
-  fs.readFile(path.join(process.cwd(), filePath), { encoding: 'utf8' }, function(err, source) {
+  filePath = path.join(process.cwd(), filePath);
+  if (!checkFileAccess(filePath, response)) {
+    return;
+  }
+
+  fs.readFile(filePath, { encoding: 'utf8' }, function(err, source) {
+    if (err) {
+      response.writeHead(404);
+      response.end();
+      return;
+    }
+
     var partials = { content: article };
 
     response.end(
       mustache.render(layout, {
         title: titleFromPath(filePath),
-        themeHref: themeHref,
-        highlightThemeHref: highlightThemeHref,
+        theme: theme,
         content: marked(source)
       }, partials)
     );
@@ -125,7 +145,12 @@ function renderArticle(filePath, response) {
 }
 
 function serveFile(filePath, response) {
-  fs.readFile(path.join(process.cwd(), filePath), function(err, data) {
+  filePath = path.join(process.cwd(), filePath);
+  if (!checkFileAccess(filePath, response)) {
+    return;
+  }
+
+  fs.readFile(filePath, function(err, data) {
     if (err) {
       response.writeHead(404)
       response.end();
@@ -140,6 +165,7 @@ function serveFile(filePath, response) {
 var server = http.createServer(function(request, response) {
   if (request.url === '/') {
     renderIndex(response);
+    return;
   }
 
   switch (path.extname(request.url)) {

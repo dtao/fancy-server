@@ -38,10 +38,10 @@ var port               = commander.port || 8080,
 
 function urlForTheme(theme) {
   if (theme === 'default') {
-    return '//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css';
+    return '//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css';
   }
 
-  return '//netdna.bootstrapcdn.com/bootswatch/3.0.1/' + theme + '/bootstrap.min.css';
+  return '//netdna.bootstrapcdn.com/bootswatch/3.1.0/' + theme + '/bootstrap.min.css';
 }
 
 function urlForHighlightTheme(highlightTheme) {

@@ -12,7 +12,11 @@ var fs        = require('fs'),
 marked.setOptions({
   highlight: function(code, lang) {
     if (lang === 'html') { lang = 'xml'; }
-    return hljs.highlight(lang, code).value
+    if (lang) {
+      return hljs.highlight(lang, code).value;
+    } else {
+      return hljs.highlightAuto(code).value;
+    }
   }
 });
 

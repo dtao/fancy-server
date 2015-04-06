@@ -8,9 +8,9 @@
   },
   "dependencies": {
     "apathy": ">= 0.1.0",
-    "commander": ">= 2.0.0",
-    "marked": ">= 0.2.10",
-    "mustache": ">= 0.7.3",
-    "highlight.js": ">= 7.4.0"
+    "commander": "^2.7.1",
+    "highlight.js": "^8.5.0",
+    "marked": "^0.3.3",
+    "mustache": "^2.0.0"
   }
 }
